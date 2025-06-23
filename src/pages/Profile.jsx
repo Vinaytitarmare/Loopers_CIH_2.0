@@ -79,7 +79,6 @@ export default function Profile() {
     let channel = null;
 
     const initialize = async () => {
-      // First try to use cached profile if available
       const cachedProfile = localStorage.getItem('cachedProfile');
       if (cachedProfile) {
         try {
@@ -123,7 +122,6 @@ export default function Profile() {
     window.location.reload();
   };
 
-  // Debug info in loading state
   if (state.loading) {
     return (
       <div className="profile-container">
@@ -153,7 +151,6 @@ export default function Profile() {
     );
   }
 
-  // Show error state with debug info
   if (state.error || !state.profile) {
     return (
       <div className="profile-container">

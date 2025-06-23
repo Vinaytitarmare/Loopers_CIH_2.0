@@ -7,7 +7,6 @@ export default function Login() {
   const [status, setStatus] = useState('');
   const navigate = useNavigate();
 
-  // 🔁 Check session on load or after magic link redirect
   useEffect(() => {
     const checkUser = async () => {
       const { data: { user } } = await supabase.auth.getUser();
@@ -18,7 +17,6 @@ export default function Login() {
 
     checkUser();
 
-    // 🔁 Listen for auth changes (e.g. magic link login completes)
     const { data: listener } = supabase.auth.onAuthStateChange((event, session) => {
       if (session) {
         navigate('/dashboard');

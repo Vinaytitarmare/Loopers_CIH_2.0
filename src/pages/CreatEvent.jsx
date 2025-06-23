@@ -19,15 +19,13 @@ export default function CreateEvent() {
     reputation_req: '',
   });
   const [status, setStatus] = useState('');
-
-  // Check for cached wallet address on component mount
+  
   useEffect(() => {
     const cachedWallet = localStorage.getItem('walletAddress');
     if (cachedWallet) {
       setWalletAddress(cachedWallet);
     }
-
-    // Get user email from Supabase auth
+    
     const getUserEmail = async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (user?.email) {
@@ -64,7 +62,7 @@ export default function CreateEvent() {
     e.preventDefault();
     setStatus('');
 
-    // Connect wallet if not already connected
+    
     if (!walletAddress) {
       await connectWallet();
       if (!walletAddress) {
@@ -91,7 +89,7 @@ export default function CreateEvent() {
     }
 
    try {
-    // 1. Insert event into Supabase
+    
     const { error } = await supabase.from('events').insert([{
         name: form.name,
         event_id: eventId,
@@ -109,7 +107,7 @@ export default function CreateEvent() {
 
     if (error) throw error;
 
-    // 2. Increment user's reputation by 5
+    
     const { data: profile, error: profileError } = await supabase
         .from('user_profiles')
         .select('reputation')
@@ -131,7 +129,6 @@ export default function CreateEvent() {
         console.warn('⚠️ Could not fetch user profile to update reputation');
     }
 
-    // 3. Create on-chain event
     setStatus('🔗 Calling smart contract...');
     const provider = new BrowserProvider(window.ethereum);
     const signer = await provider.getSigner();

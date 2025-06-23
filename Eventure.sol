@@ -18,9 +18,9 @@ contract EventureNFT is ERC721URIStorage, Ownable {
     }
 
     mapping(uint256 => Event) public events;
-    mapping(uint256 => uint256) public ticketEvent;   // tokenId => eventId
-    mapping(uint256 => uint256) public ticketPrice;   // tokenId => price paid
-    mapping(uint256 => bool) public tokenExists;      // tokenId => minted
+    mapping(uint256 => uint256) public ticketEvent;   
+    mapping(uint256 => uint256) public ticketPrice;   
+    mapping(uint256 => bool) public tokenExists;   
 
     mapping(uint256 => uint256) public resalePrice;
     mapping(uint256 => bool) public isListed;

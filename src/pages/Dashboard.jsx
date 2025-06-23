@@ -1,10 +1,10 @@
 /* global BigInt */
-import React, { useEffect, useState, useMemo, useCallback } from 'react';
-import { supabase } from '../lib/supabaseClient';
-import ConnectWallet from '../components/ConnectWallet';
-import { Link } from 'react-router-dom';
 import { BrowserProvider, Contract } from 'ethers';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { Link } from 'react-router-dom';
 import EventureABI from '../abi/EventureNFT.json';
+import ConnectWallet from '../components/ConnectWallet';
+import { supabase } from '../lib/supabaseClient';
 
 const CONTRACT_ADDRESS = '0xeD71d2AA40Ebc5b52492806C3593D34Ce89Cb95A';
 
@@ -63,10 +63,6 @@ async function handleBuyTicket(event, userEmail, walletAddress) {
       throw new Error('⏰ Sorry, you\'re late! This event has already passed.');
     }
     
-    if (walletAddress.toLowerCase() === String(event.organizer_wallet).toLowerCase()) {
-      throw new Error("Organizers can't buy their own tickets");
-    }
-
     const { data: { user }, error: userError } = await supabase.auth.getUser();
     if (!user || userError) throw new Error('You must be logged in to buy tickets');
 
@@ -158,7 +154,6 @@ export default function Dashboard() {
   const [eventFilter, setEventFilter] = useState('upcoming');
   const [loading, setLoading] = useState(true);
 
-  // Memoized filtered events to prevent unnecessary recalculations
   const filteredEvents = useMemo(() => {
     if (eventFilter === 'all') return events;
     
@@ -168,7 +163,6 @@ export default function Dashboard() {
     });
   }, [events, eventFilter]);
 
-  // Memoized buy click handler
   const handleBuyClick = useCallback(async (event) => {
     if (!walletAddress) {
       alert('Please connect your wallet first');
@@ -177,7 +171,6 @@ export default function Dashboard() {
     
     const success = await handleBuyTicket(event, userEmail, walletAddress);
     if (success) {
-      // Optimistically update local state
       setEvents(prevEvents => 
         prevEvents.map(e => 
           e.event_id === event.event_id 
@@ -188,7 +181,6 @@ export default function Dashboard() {
     }
   }, [walletAddress, userEmail]);
 
-  // Memoized filter button click handlers
   const handleFilterChange = useCallback((filter) => {
     setEventFilter(filter);
   }, []);
@@ -198,7 +190,6 @@ export default function Dashboard() {
 
     const fetchData = async () => {
       try {
-        // Parallel fetch for better performance
         const [eventsResult, userResult] = await Promise.all([
           supabase.from('events').select('*'),
           supabase.auth.getUser()
@@ -224,7 +215,6 @@ export default function Dashboard() {
 
     fetchData();
 
-    // Debounced realtime subscription
     const subscription = supabase
       .channel('public:events')
       .on(
@@ -233,7 +223,6 @@ export default function Dashboard() {
         (payload) => {
           if (!mounted) return;
           
-          // Optimistic updates instead of full refetch
           if (payload.eventType === 'INSERT') {
             setEvents(prev => [...prev, payload.new]);
           } else if (payload.eventType === 'UPDATE') {
@@ -701,27 +690,6 @@ export default function Dashboard() {
               <div className="event-count">
                 Showing {filteredEvents.length} of {events.length} events
               </div>
-            </div>
-            
-            <div className="filter-buttons">
-              <button 
-                className={`filter-btn ${eventFilter === 'upcoming' ? 'active' : ''}`}
-                onClick={() => handleFilterChange('upcoming')}
-              >
-                🚀 Upcoming
-              </button>
-              <button 
-                className={`filter-btn ${eventFilter === 'past' ? 'active' : ''}`}
-                onClick={() => handleFilterChange('past')}
-              >
-                📚 Past
-              </button>
-              <button 
-                className={`filter-btn ${eventFilter === 'all' ? 'active' : ''}`}
-                onClick={() => handleFilterChange('all')}
-              >
-                📋 All
-              </button>
             </div>
           </div>
 

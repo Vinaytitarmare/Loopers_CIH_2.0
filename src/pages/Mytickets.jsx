@@ -1,31 +1,28 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabaseClient';
 
 export default function MyTickets() {
   const [tickets, setTickets] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [ticketFilter, setTicketFilter] = useState('all'); // 'upcoming', 'past', 'all'
+  const [ticketFilter, setTicketFilter] = useState('all'); 
   const [resaleListings, setResaleListings] = useState([]);
 
-  // Helper function to check if event date has passed
   const isEventExpired = (eventDate) => {
     const currentDate = new Date();
     const eventDateTime = new Date(eventDate);
     return eventDateTime < currentDate;
   };
 
-  // Filter tickets based on selected filter
   const getFilteredTickets = () => {
     if (ticketFilter === 'all') return tickets;
     
     return tickets.filter(ticket => {
-      if (!ticket.events?.date) return false; // Skip tickets without valid dates
+      if (!ticket.events?.date) return false; 
       const expired = isEventExpired(ticket.events.date);
       return ticketFilter === 'upcoming' ? !expired : expired;
     });
   };
 
-  // Fetch resale listings for current user
   const fetchResaleListings = async (userEmail) => {
     const { data, error } = await supabase
       .from('resale_listings')
@@ -38,17 +35,14 @@ export default function MyTickets() {
     }
   };
 
-  // Check if ticket is listed for resale
   const isTicketOnResale = (eventId) => {
     return resaleListings.some(listing => listing.event_id === eventId);
   };
 
-  // Get resale listing for a ticket
   const getResaleListing = (eventId) => {
     return resaleListings.find(listing => listing.event_id === eventId);
   };
 
-  // Handle resale listing
   const handleResale = async (ticket) => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
@@ -57,7 +51,7 @@ export default function MyTickets() {
       const { data, error } = await supabase
         .from('resale_listings')
         .insert({
-          event_id: ticket.event_id, // Use the bigint event_id from tickets table
+          event_id: ticket.event_id, 
           seller_address: ticket.owner_address,
           seller_email: user.email,
           price_wei: ticket.events.price_wei,
@@ -72,7 +66,6 @@ export default function MyTickets() {
         return;
       }
 
-      // Update resale listings state
       setResaleListings(prev => [...prev, data]);
       alert('Ticket listed for resale successfully!');
     } catch (error) {
@@ -81,7 +74,6 @@ export default function MyTickets() {
     }
   };
 
-  // Handle cancel resale
   const handleCancelResale = async (eventId) => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
@@ -100,7 +92,6 @@ export default function MyTickets() {
         return;
       }
 
-      // Update resale listings state
       setResaleListings(prev => prev.filter(listing => listing.event_id !== eventId));
       alert('Resale listing canceled successfully!');
     } catch (error) {
@@ -138,18 +129,17 @@ export default function MyTickets() {
         setLoading(false);
         return;
       }
-
-      // Process tickets to check for missed events
+      
       const processedTickets = await Promise.all(data.map(async (ticket) => {
         const eventDate = new Date(ticket.events?.date);
         const now = new Date();
         const isEventPassed = eventDate < now;
         const isMissed = isEventPassed && !ticket.attended && !ticket.events?.is_cancelled;
 
-        // Only decrease reputation if event is missed AND reputation hasn't been decreased yet
+        
         if (isMissed && !ticket.reputation_decreased) {
           try {
-            // Update user reputation
+            
             const { data: userData } = await supabase
               .from('user_profiles')
               .select('reputation')
@@ -163,7 +153,7 @@ export default function MyTickets() {
                 .update({ reputation: newReputation })
                 .eq('email', user.email);
 
-              // Mark ticket as reputation_decreased to avoid repeated deductions
+                
               await supabase
                 .from('tickets')
                 .update({ reputation_decreased: true })
@@ -185,7 +175,6 @@ export default function MyTickets() {
 
       setTickets(processedTickets);
       
-      // Fetch resale listings after tickets are loaded
       await fetchResaleListings(user.email);
       
       setLoading(false);
@@ -202,32 +191,6 @@ export default function MyTickets() {
       <div className="my-tickets-container">
         <div className="header-section">
           <h1 className="page-title">My Tickets</h1>
-          
-          <div className="filter-section">
-            <div className="ticket-count">
-              Showing {filteredTickets.length} of {tickets.length} tickets
-            </div>
-            <div className="filter-buttons">
-              <button 
-                className={`filter-btn ${ticketFilter === 'upcoming' ? 'active' : ''}`}
-                onClick={() => setTicketFilter('upcoming')}
-              >
-                🚀 Upcoming
-              </button>
-              <button 
-                className={`filter-btn ${ticketFilter === 'past' ? 'active' : ''}`}
-                onClick={() => setTicketFilter('past')}
-              >
-                📚 Past
-              </button>
-              <button 
-                className={`filter-btn ${ticketFilter === 'all' ? 'active' : ''}`}
-                onClick={() => setTicketFilter('all')}
-              >
-                📋 All
-              </button>
-            </div>
-          </div>
         </div>
 
         {filteredTickets.length === 0 ? (
@@ -278,34 +241,6 @@ export default function MyTickets() {
                       ? <span className="status-attended">✔ Attended</span>
                       : <span className="status-pending">⏳ Not Attended</span>}
                   </p>
-                  
-                  {/* Resale Status and Actions */}
-                  {canResale && (
-                    <div className="resale-section">
-                      {onResale ? (
-                        <div className="resale-status">
-                          <p className="event-detail">
-                            <strong>Resale Status:</strong> <span className="status-resale">🔄 Listed for Resale</span>
-                          </p>
-                          <button 
-                            className="resale-btn cancel-resale-btn"
-                            onClick={() => handleCancelResale(ticket.event_id)}
-                          >
-                            Cancel Resale
-                          </button>
-                        </div>
-                      ) : (
-                        <div className="resale-actions">
-                          <button 
-                            className="resale-btn"
-                            onClick={() => handleResale(ticket)}
-                          >
-                            💰 Resale Ticket
-                          </button>
-                        </div>
-                      )}
-                    </div>
-                  )}
                 </li>
               );
             })}
